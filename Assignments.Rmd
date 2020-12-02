@@ -342,7 +342,7 @@ The code is:
 ```{r}
 EM_algo(2)
 ```
-When K is equal to 2 the EM-algorithm stops after 16 iterations and the pi values are very close to each other. In this case we miss one true pi, which maybe can be seen as under fitting.
+When K is equal to 2 the EM-algorithm stops after 16 iterations and the pi values are very close to each other. In this case we miss one true pi.
 
 ```{r}
 EM_algo(3)
@@ -353,14 +353,13 @@ When K is equal to 3 the EM-algorithm stops after 62 iterations and the pi value
 EM_algo(4)
 ```
 
-When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi, which maybe can be seen as over fitting.
+When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi.
 
 # Assignment3 . High Dimentional Methods
 
-#### 1
+## Task 1
 Dividing data to train and test(70/30) and performing NSC classification.
 ```{r, warning=FALSE, message=FALSE,echo=F,results = 'hide'}
-setwd("D:/Linkoping university/first semester/Machine Learning/lab/block2")
 
 new_df <- read.csv("geneexp.csv")
 
@@ -442,7 +441,7 @@ nrow(a)
 ```{r}
 paste("Number of genes selected by this model : ", nrow(a))
 ```
-#### task_2
+## Task 2
 names of the 2 most contributing genes 
 ```{r message=FALSE, warning=FALSE,echo=FALSE}
 a<-(pamr.listgenes(model, mydata, threshold = best_Th))
@@ -474,7 +473,7 @@ cat(paste("ME rate for test data :  ", test_ME))
 ```
 It seems that 27 samples are classified correctly to CD19, 30 samples belong to CD4, in which 4 samples are miss classified. 33 samples belong to CD8,6 samples from them are miss qualified . 
 
-#### Task 3
+## Task 3
 
 ##### Elastic net with multinomial response :
 ```{r }
@@ -497,7 +496,7 @@ paste("Number of feature :",num_feature )
 ```
 ##### SVM:
 ```{r}
-library("kernlab")
+library(kernlab)
 set.seed(12345)
 train.x <-as.matrix(train[, -ncol(train)])
 train.y <- as.matrix(train[[ncol(train)]])
@@ -521,7 +520,7 @@ Analysis:
 By comparison three different models, we can see the SVM has the lowest error rate compare two other models, but the this model select 2085 features for classifying three different classes.
 The error rate in Elastic net model is lower than NSC but number of features in three classes are more than NSC. As the difference between error rate in NSC and Elastic net could be ignored, by considering number of features, NSC could be a good model for classification.
 
-#### Task 4 Benjamin Hochberg
+## Task 4 Benjamin Hochberg
 ```{r , echo= FALSE }
 df = new_df[,-1]
 y_1 <- ifelse(df$CellType=="CD4",1,0)
