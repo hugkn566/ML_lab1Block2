@@ -184,11 +184,174 @@ The variance is a measure which tells how much the resulting misclassification a
 Having a lower variance gives a higher certainty regarding the mean error rate.
 
 
-# Assignment 2
+# Assignment 2: Mixture models
+
+```{r}
+EM_algo <- function(k_num){
+set.seed(1234567890)
+max_it <- 100 # max number of EM iterations
+min_change <- 0.1 # min change in log likelihood between two consecutive EM iterations
+N=1000 # number of training points
+D=10 # number of dimensions
+x <- matrix(nrow=N, ncol=D) # training data
+
+true_pi <- vector(length = 3) # true mixing coefficients
+true_mu <- matrix(nrow=3, ncol=D) # true conditional distributions
+true_pi=c(1/3, 1/3, 1/3)
+true_mu[1,]=c(0.5,0.6,0.4,0.7,0.3,0.8,0.2,0.9,0.1,1)
+true_mu[2,]=c(0.5,0.4,0.6,0.3,0.7,0.2,0.8,0.1,0.9,0)
+true_mu[3,]=c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5)
+
+# Producing the training data
+for(n in 1:N) {
+  k <- sample(1:3,1,prob=true_pi)
+  for(d in 1:D) {
+    x[n,d] <- rbinom(1,1,true_mu[k,d])
+  }
+}
+
+K <- k_num# number of guessed components
+z <- matrix(nrow=N, ncol=K) # fractional component assignments
+pi <- vector(length = K) # mixing coefficients
+mu <- matrix(nrow=K, ncol=D) # conditional distributions
+llik <- vector(length = max_it) # log likelihood of the EM iterations
+
+# Random initialization of the paramters
+pi <- runif(K,0.49,0.51)
+pi <- pi / sum(pi)
+for(k in 1:K) {
+  mu[k,] <- runif(D,0.49,0.51)
+}
+
+#pi
+#mu
+
+for(it in 1:max_it) {
+  #plot(mu[1,], type="o", col="blue", ylim=c(0,1))
+  #points(mu[2,], type="o", col="red")
+  #points(mu[3,], type="o", col="green")
+  #points(mu[4,], type="o", col="yellow")
+  Sys.sleep(0.5)
+  
+  # E-step: Computation of the fractional component assignments
+  for (j in 1:k) {
+    for (i in 1:n) {
+      z[i,j] <- pi[j]*prod((mu[j,]^x[i,])*((1-mu[j,])^(1-x[i,])))
+    }
+  }
+  for(j in 1:nrow(z)) {
+    z[j,] <- z[j,]/sum(z[j,])
+  }
+  
+  #Log likelihood computation.
+  for(i in 1:n ){
+    for(j in 1:k){
+      llik[it] <- llik[it] + z[i,j] * (log(pi[j]) + sum(x[i,] * log(mu[j,]) + (1- x[i,])*log(1- mu[j,]))) 
+    }
+  }  
+  
+  cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  flush.console() 
+  # Stop if the lok likelihood has not changed significantly
+  if(it > 1 ){
+    if(( abs(llik[it]- llik[it-1])  < min_change)){
+      break
+    }
+  }   
+  #M-step: ML parameter estimation from the data and fractional component assignments
+  row_sum_z <- c(rep(NA, ncol(z)))
+  for (i in 1:ncol(z)) {
+    row_sum_z[i] <- sum(z[,i])
+  }
+  pi <- row_sum_z/N
+  mu <- t(z) %*% x /row_sum_z
+  
+}
+return(list(pi = pi))
+}
+```
+For the E-step for mixtures of multivariate Bernoulli distributions we compute:
+
+$$
+p\left(z_{n k} \mid \boldsymbol{x}_{n}, \boldsymbol{\mu}, \boldsymbol{\pi}\right)=\frac{p\left(\boldsymbol{z}_{n k}, \boldsymbol{x}_{n} \mid \boldsymbol{\mu}, \boldsymbol{\pi}\right)}{\sum_{k} p\left(z_{n k}, \boldsymbol{x}_{n} \mid \boldsymbol{\mu}, \boldsymbol{\pi}\right)}=\frac{\pi_{k} p\left(\boldsymbol{x}_{n} \mid \boldsymbol{\mu}_{k}\right)}{\sum_{k} \pi_{k} p\left(\boldsymbol{x}_{n} \mid \boldsymbol{\mu}_{k}\right)}
+$$
+for all n and k 
+
+where
+
+$$
+p(\boldsymbol{x}_n \mid \boldsymbol{\mu}_k) = \prod_{i} \mu_{k i}^{x_{i}}\left(1-\mu_{k i}\right)^{\left(1-x_{i}\right)}
+$$
+The code is:
+
+```{r, eval=FALSE}
+  # E-step: Computation of the fractional component assignments
+  for (j in 1:k) {
+    for (i in 1:n) {
+      z[i,j] <- pi[j]*prod((mu[j,]^x[i,])*((1-mu[j,])^(1-x[i,])))
+    }
+  }
+  for(j in 1:nrow(z)) {
+    z[j,] <- z[j,]/sum(z[j,])
+  }
+```
+
+For computing the Log likelihood we use:
+
+$$
+\sum_{n} \sum_{k} p\left(z_{n k} \mid \boldsymbol{x}_{n}, \boldsymbol{\mu}, \boldsymbol{\pi}\right)\left[\log \pi_{k}+\sum_{i}\left[x_{n i} \log \mu_{k i}+\left(1-x_{n i}\right) \log \left(1-\mu_{k i}\right)\right]\right]
+$$
+
+The code is:
+```{r, eval=FALSE}
+  #Log likelihood computation.
+  for(i in 1:n ){
+    for(j in 1:k){
+      llik[it] <- llik[it] + z[i,j] * (log(pi[j]) + sum(x[i,] * log(mu[j,]) + (1- x[i,])*log(1- mu[j,]))) 
+    }
+  } 
+ 
+  
+```
 
 
 
 
+
+ML parameter estimation from the data and fractional component assignments we use:
+
+$$
+\begin{aligned}
+\pi_{k}^{M L} &=\frac{\sum_{n} p\left(z_{n k} \mid \boldsymbol{x}_{n}, \boldsymbol{\mu}, \boldsymbol{\pi}\right)}{N} \\
+\mu_{k i}^{M L} &=\frac{\sum_{n} x_{n i} p\left(z_{n k} \mid \boldsymbol{x}_{n}, \boldsymbol{\mu}, \boldsymbol{\pi}\right)}{\sum_{n} p\left(z_{n k} \mid \boldsymbol{x}_{n}, \boldsymbol{\mu}, \boldsymbol{\pi}\right)}
+\end{aligned}
+$$
+The code is:
+
+```{r, eval=FALSE}
+  #M-step: ML parameter estimation from the data and fractional component assignments
+  row_sum_z <- c(rep(NA, ncol(z)))
+  for (i in 1:ncol(z)) {
+    row_sum_z[i] <- sum(z[,i])
+  }
+```
+
+
+```{r}
+EM_algo(2)
+```
+When K is equal to 2 the EM-algorithm stops after 16 iterations and the pi values are very close to each other. In this case we miss one true pi, which maybe can be seen as under fitting.
+
+```{r}
+EM_algo(3)
+```
+When K is equal to 3 the EM-algorithm stops after 62 iterations and the pi values are pretty close to each other.
+
+```{r}
+EM_algo(4)
+```
+
+When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi, which maybe can be seen as over fitting.
 
 # Assignment 3
 
