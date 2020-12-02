@@ -8,7 +8,11 @@ output:
 latex_engine: xelatex
 ---
 
-# State of contribution 
+# State of contribution
+
+### Assignment1: Niklas Larsson
+### Assignment2: Hugo Knape
+### Assignment3: Zahra Jalilpour
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -353,7 +357,219 @@ EM_algo(4)
 
 When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi, which maybe can be seen as over fitting.
 
-# Assignment 3
+# Assignment3 . High Dimentional Methods
+
+#### 1
+Diviving data to train and test(70/30) and performing NSC classification.
+```{r, warning=FALSE, message=FALSE,echo=F,results = 'hide'}
+setwd("D:/Linkoping university/first semester/Machine Learning/lab/block2")
+
+new_df <- read.csv("geneexp.csv")
+
+df = new_df[,-1]  # the first and the last are factor
+set.seed(12345)
+m <- nrow(df)
+# divide data to train and test(70:30) 
+id <- sample(1:m, floor(m*0.7))
+train <- df[id,]
+test <- df[-id,]
+
+### train ###
+rownames(train) = 1:nrow(train)
+x = t(train[, -ncol(train)])
+y = train[[ncol(train)]]
+mydata <- list(x=x, y=as.factor(y),geneid=as.character(1:nrow(x)),genenames=rownames(x))
+
+### test ###
+rownames(test) = 1:nrow(test)
+x_test = t(test[, -ncol(test)])
+y_test = test[[ncol(test)]]
+test_mydata <- list(x=x_test, y=as.factor(y_test),geneid=as.character(1:nrow(x_test)),genenames=rownames(x_test))
+
+```
+Then run to train a nearest shrunken centroid classifier.(NSC)
+For 30 different values of the threshold the number of nonzero genes and the number of misclassifications on the training set will be  listed
+
+
+```{r ,message=FALSE,warning=FALSE,echo=F, results= 'hide'}
+library(pamr)
+model = pamr.train(mydata)
+
+# choice the threshold by cv
+cvmodel = pamr.cv(model,mydata)
+```
+
+```{r}
+model
+```
+```{r}
+cvmodel
+
+
+```
+The output of this function looks very similar to the model. The numbers in the errors column are now the summed errors of all 10 cross validation steps. The CV error usually is bigger than the training error.
+
+Missclassification Error Plot.
+In both figures, the x-axis represents different values of threshold (corresponding to different numbers of nonzero genes as shown on top of each figure and
+the y-axis shows the number of misclassifications. The upper figure describes the whole
+dataset, the lower one describes each class individually
+```{r,fig.width=12, fig.height=8}
+pamr.plotcv(cvmodel)
+
+```
+Minimum threshold:
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+min_Error <- which.min(cvmodel$error)
+best_Th <- cvmodel$threshold[min_Error]
+paste("Best threshold equals: ", best_Th)
+numberofgen <- model$nonzero[min_Error]
+paste("Number of features: ", numberofgen)
+```
+The value of 7.2 of the threshold has the lowest error of cv.model.
+
+Centroid plot(threshold = 7.2):
+
+The function pamr.plotcen() plots the shrunken class centroids for each class.NSC classification shrink each of the class centroid toward the overall centroid for all classes by threshold.This shrinkage consists of moving the centroid toward zero by threshold, setting it equal to zero if it hits zero.
+Here the threshold is 7.2, hence the class centroid would be shrink be minus by the threshold. It is the reason that we see positive and negative values in the centroid plot.
+```{r}
+pamr.plotcen(model, mydata, threshold = best_Th)
+
+
+```
+Number of genes selected by this model:
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+a<-pamr.listgenes(model, mydata, threshold = best_Th, genenames=FALSE)
+nrow(a)
+```
+```{r}
+paste("Number of genes selected by this model : ", nrow(a))
+```
+#### task_2
+names of the 2 most contributing genes 
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+a<-(pamr.listgenes(model, mydata, threshold = best_Th))
+top_2 = a[1:2,1]
+k <- as.numeric(top_2)
+mydata$genenames[k]
+```
+```{r}
+paste("Names of the two most contributing genes: ",mydata$genenames[k] )
+```
+The name of two most contributing genes are, " CD74" and "HLA-DRA".And both of them are considered as marker genes.
+
+Confusion Matrix.
+Here we see 73 samples belong to class CD19, 65 sample is classified correctly and 8 are missclassified
+as CD4.  70 samples belong to CD4. 65 sample is classified correctly and 5 are missclassified as CD8
+67 samples belong to CD8, 59 is classified correctly and 8 is missclassified as CD4. This makes an 
+overall error rate 0.1%.
+```{r}
+pamr.confusion(cvmodel,  threshold = best_Th)
+```
+##### reporting test error.
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+pam.diagnosis <- pamr.predict(model, x_test, threshold = best_Th)
+new_matrix <- table(y_test, pam.diagnosis)
+paste("Confusion Matrix for test data :")
+new_matrix
+test_ME <- 1-(sum(diag(new_matrix)))/sum(new_matrix)
+cat(paste("ME rate for test data :  ", test_ME))
+```
+It seems that 27 samples are classified correctly to CD19, 30 samples belong to CD4, in which 4 samples are miss classified. 33 samples belong to CD8,6 samples from them are miss qualified . 
+
+#### task_3
+##### Elastic net with multinomial response :
+```{r }
+library(glmnet)
+set.seed(12345)
+x_e <- as.matrix(train[, -ncol(train)])
+y_e <- as.matrix(train[[ncol(train)]])
+# fit the elastic net
+elastic <- cv.glmnet(x_e, y_e, alpha = 0.5, family = "multinomial")
+testx=as.matrix((test[ , -ncol(test)]))
+predenet=predict(elastic, newx = testx, s = elastic$lambda.min, type = "class")
+cm_elastic_net <- table(y_test, predenet)
+cm_elastic_net
+test_error_elasic_net <- 1-sum(diag(cm_elastic_net))/sum(cm_elastic_net)
+coef1 <-coef(elastic, s="lambda.min")
+num_feature<-length(coef1$CD8@x)+length(coef1$CD19@x)+length(coef1$CD4@x)
+cat(paste("ME rate for test data :  ", test_error_elasic_net))
+paste("Number of feature :",num_feature )
+
+```
+##### SVM:
+```{r}
+library("kernlab")
+set.seed(12345)
+train.x <-as.matrix(train[, -ncol(train)])
+train.y <- as.matrix(train[[ncol(train)]])
+svm.trained <- ksvm(train.x, train.y , type = "C-svc", kernel='vanilladot')
+svm_pred <- predict(svm.trained, testx)
+cm_svm <- table(y_test, svm_pred)
+cm_svm
+test_error_svm = 1-sum(diag(cm_svm))/sum(cm_svm)
+paste("number of feature:", (ncol(df)-1))
+cat(paste("ME rate for test data :  ", test_error_svm))
+```
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+final_result <- cbind(numberofgen, num_feature, (ncol(df)-1))
+feature_count <- cbind(test_ME, test_error_elasic_net,test_error_svm)
+final_matrix <- rbind(final_result,feature_count)
+colnames(final_matrix) <- c("Nearest Shrunken Centroid Model", "Elastic_Net Model","SVM Model")
+rownames(final_matrix) <- c("Number of Features", "Error rate")
+knitr::kable(final_matrix, caption = "Comparsion of Three models")
+```
+Analysis:
+By comparison three different models, we can see the SVM has the lowest error rate compare two other models, but the this model select 2085 features for classifying three different classes.
+The error rate in Elastic net model is lower than NSC.but number of features in three classes are more than NSC. As the difference between error rate in NSC and Elastic net could be ignored, by considering number of features, NSC could be a good model for classification.
+#### task4: Benjamin Hochberg
+```{r , echo= FALSE }
+df = new_df[,-1]
+y_1 <- ifelse(df$CellType=="CD4",1,0)
+y_2 <- ifelse(df$CellType=="CD8",1,0)
+y_3 <- ifelse(df$CellType=="CD19",1,0)
+p1 <- sapply(1:(ncol(df)-1), function(x) t.test(df[,x] ~ y_1, data = df)$p.val)
+p2 <- sapply(1:(ncol(df)-1), function(x) t.test(df[,x] ~ y_2, data = df)$p.val)
+p3 <- sapply(1:(ncol(df)-1), function(x) t.test(df[,x] ~ y_3, data = df)$p.val)
+
+pvall_1 <- as.data.frame(p1)
+pvall_2 <- as.data.frame(p2)
+pvall_3 <- as.data.frame(p3)
+no_CD4 <-length(pvall_1$p1[which(p1 < 0.05)])
+paste("number of features in CD4: ", no_CD4)
+no_CD8 <-length(pvall_2$p2[which(p2 < 0.05)])
+paste("number of features in CD8: ", no_CD8)
+no_CD19 <-length(pvall_3$p3[which(p3 < 0.05)])
+paste("number of features in CD19: ", no_CD19)
+feature_CD4<-as.data.frame(pvall_1$p1[which(p1 < 0.05)])
+names(feature_CD4)[1]<-"feature_sel"
+feature_CD8<-as.data.frame(pvall_2$p2[which(p2 < 0.05)])
+names(feature_CD8)[1]<-"feature_sel"
+feature_CD19<-as.data.frame(pvall_3$p3[which(p3 < 0.05)])
+names(feature_CD19)[1]<-"feature_sel"
+x1 <- sort(as.numeric(p1))
+x2 <- sort(as.numeric(p2))
+x3 <- sort(as.numeric(p3))
+y1<- sort(as.numeric(feature_CD4$feature_sel))
+y2<- sort(as.numeric(feature_CD8$feature_sel))
+y3 <- sort(as.numeric(feature_CD19$feature_sel))
+library(ggplot2)
+ggplot()+
+  geom_density(aes(x1),col="red")+
+  geom_density(aes(y1) , col="blue")+
+  ggtitle("p_values and rejected area for CD4")
+ggplot()+
+  geom_density(aes(x2),col="red")+
+  geom_density(aes(y2) , col="blue")+
+  ggtitle("p_values and rejected area for CD8")
+ggplot()+
+  geom_density(aes(x3),col="red")+
+  geom_density(aes(y3) , col="blue")+
+  ggtitle("p_values and rejected area for CD19")
+
+
+
+```
+The Benjamin_Hochberg method is implemented. By using t.test, varoius p_value are calculated for three different classes.The number of features that are not related to three classes are more than three other models.
 
 
 # Appendix:
