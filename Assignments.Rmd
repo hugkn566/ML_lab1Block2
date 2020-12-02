@@ -112,8 +112,6 @@ for(i in 1:3){
 ```
 
 
-
-
 ## Task C
 
 ### New data generation
@@ -360,7 +358,7 @@ When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi value
 # Assignment3 . High Dimentional Methods
 
 #### 1
-Diviving data to train and test(70/30) and performing NSC classification.
+Dividing data to train and test(70/30) and performing NSC classification.
 ```{r, warning=FALSE, message=FALSE,echo=F,results = 'hide'}
 setwd("D:/Linkoping university/first semester/Machine Learning/lab/block2")
 
