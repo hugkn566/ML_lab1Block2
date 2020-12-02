@@ -344,7 +344,7 @@ The code is:
 ```{r}
 EM_algo(2)
 ```
-When K is equal to 2 the EM-algorithm stops after 16 iterations and the pi values are very close to each other. In this case we miss one true pi, which maybe can be seen as under fitting.
+When K is equal to 2 the EM-algorithm stops after 16 iterations and the pi values are very close to each other. In this case we miss one true pi.
 
 ```{r}
 EM_algo(3)
@@ -355,7 +355,7 @@ When K is equal to 3 the EM-algorithm stops after 62 iterations and the pi value
 EM_algo(4)
 ```
 
-When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi, which maybe can be seen as over fitting.
+When K is equal to 4 the EM-algorithm stops after 16 iterations and the pi values are pretty far from each other. In this task we have one extra pi.
 
 # Assignment3 . High Dimentional Methods
 
