@@ -476,7 +476,8 @@ cat(paste("ME rate for test data :  ", test_ME))
 ```
 It seems that 27 samples are classified correctly to CD19, 30 samples belong to CD4, in which 4 samples are miss classified. 33 samples belong to CD8,6 samples from them are miss qualified . 
 
-#### task_3
+#### Task 3
+
 ##### Elastic net with multinomial response :
 ```{r }
 library(glmnet)
@@ -520,8 +521,9 @@ knitr::kable(final_matrix, caption = "Comparsion of Three models")
 ```
 Analysis:
 By comparison three different models, we can see the SVM has the lowest error rate compare two other models, but the this model select 2085 features for classifying three different classes.
-The error rate in Elastic net model is lower than NSC.but number of features in three classes are more than NSC. As the difference between error rate in NSC and Elastic net could be ignored, by considering number of features, NSC could be a good model for classification.
-#### task4: Benjamin Hochberg
+The error rate in Elastic net model is lower than NSC but number of features in three classes are more than NSC. As the difference between error rate in NSC and Elastic net could be ignored, by considering number of features, NSC could be a good model for classification.
+
+#### Task 4 Benjamin Hochberg
 ```{r , echo= FALSE }
 df = new_df[,-1]
 y_1 <- ifelse(df$CellType=="CD4",1,0)
